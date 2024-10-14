@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"regexp"
 	"time"
 
@@ -16,10 +17,10 @@ func ValidEmail(email string) bool {
 	return regexp.MustCompile(regex).MatchString(email)
 }
 
-func GenerateToken(email string) (string, error) {
+func GenerateToken(id int) (string, error) {
 	getClaims := jwt.MapClaims{
-		"email": email,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+		"id":  id,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, getClaims)
@@ -32,32 +33,38 @@ func GenerateToken(email string) (string, error) {
 	return tokenString, nil
 }
 
-func VerifyToken(tokenString string) (string, error) {
+func VerifyToken(tokenString string) (int, error) {
+	fmt.Println("request coming here ")
+	fmt.Println("tokenString is : ", tokenString)
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		// checking the signing method
-		data, ok := t.Method.(*jwt.SigningMethodHMAC)
+		_, ok := t.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
 			return nil, jwt.ErrSignatureInvalid
 		}
-		fmt.Println("data is : ", data)
-
 		return []byte(os.Getenv("SECRET_KEY")), nil
 	})
 
 	if err != nil {
 		log.Println("error while verifying token: ", err)
-		return "", err
+		return 0, err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", errors.New("invalid token claims")
+		return 0, errors.New("invalid token claims")
 	}
 
-	email, ok := claims["email"].(string)
+	fmt.Println("claims are : ", claims)
+	fmt.Println("type is :", reflect.TypeOf(claims["id"]))
+
+	id, ok := claims["id"].(float64)
 	if !ok {
-		return "", errors.New("invalid email")
+		return 0, errors.New("invalid id")
 	}
 
-	return email, nil
+	idInt := int(id)
+
+	fmt.Println("id is in verify token : ", id)
+	return idInt, nil
 }

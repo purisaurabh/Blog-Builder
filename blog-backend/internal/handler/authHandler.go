@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -85,12 +86,14 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := helper.GenerateToken(user.Email)
+	token, err := helper.GenerateToken(user.ID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to login",
 		})
 	}
+
+	fmt.Println("token is : ", token)
 
 	cookie := fiber.Cookie{
 		Name:     "jwt",
